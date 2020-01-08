@@ -1,7 +1,7 @@
 # S32DS 
-/Release/
-/Debug/
-/*.settings/
+Release/
+Debug/
+*.settings/
 
 # Prerequisites
 *.d
