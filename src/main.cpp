@@ -25,7 +25,7 @@
 #include "s32k_libuavcan.hpp"
 
 /* Choose for which board of the demo to target, NODE_A or NODE_B */
-#define NODE_A
+#define NODE_B
 
 /* Function that takes the payload and adds 1 */
 void payload_bounceADD(std::uint8_t* rx_payload)

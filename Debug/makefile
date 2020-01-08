@@ -52,6 +52,15 @@ EXECUTABLES_QUOTED += \
 EXECUTABLES_OS_FORMAT += \
 libuavcan_S32K142_demo.elf \
 
+SECONDARY_FLASH += \
+libuavcan_S32K142_demo.srec \
+
+SECONDARY_FLASH_QUOTED += \
+"libuavcan_S32K142_demo.srec" \
+
+SECONDARY_FLASH_OS_FORMAT += \
+libuavcan_S32K142_demo.srec \
+
 SECONDARY_SIZE += \
 libuavcan_S32K142_demo.siz \
 
@@ -74,8 +83,15 @@ libuavcan_S32K142_demo.elf: $(OBJS) C:/Users/noxuz/workspaceS32DS.ARM.2018.R1/li
 	@echo 'Finished building target: $@'
 	@echo ' '
 
-libuavcan_S32K142_demo.siz: $(EXECUTABLES)
+libuavcan_S32K142_demo.srec: $(EXECUTABLES)
 	@echo 'Executing target #6 $@'
+	@echo 'Invoking: Standard S32DS Create Flash Image'
+	arm-none-eabi-objcopy -O srec $(EXECUTABLES)  "libuavcan_S32K142_demo.srec"
+	@echo 'Finished building: $@'
+	@echo ' '
+
+libuavcan_S32K142_demo.siz: $(EXECUTABLES)
+	@echo 'Executing target #7 $@'
 	@echo 'Invoking: Standard S32DS Print Size'
 	arm-none-eabi-size --format=berkeley $(EXECUTABLES)
 	@echo 'Finished building: $@'
@@ -83,10 +99,10 @@ libuavcan_S32K142_demo.siz: $(EXECUTABLES)
 
 # Other Targets
 clean:
-	-$(RM) ./*/*.d  $(CC_DEPS_QUOTED) $(CXX_DEPS_QUOTED) $(C_UPPER_DEPS_QUOTED) $(SECONDARY_SIZE_QUOTED) $(C++_DEPS_QUOTED) ./*/*/*.d  ./*/*.o ./*/*/*.o  $(EXECUTABLES_QUOTED)
+	-$(RM) $(SECONDARY_FLASH_QUOTED) ./*/*.d  $(CC_DEPS_QUOTED) $(CXX_DEPS_QUOTED) $(C_UPPER_DEPS_QUOTED) $(SECONDARY_SIZE_QUOTED) $(C++_DEPS_QUOTED) ./*/*/*.d  ./*/*.o ./*/*/*.o  $(EXECUTABLES_QUOTED)
 	-@echo ' '
 
-secondary-outputs: $(SECONDARY_SIZE)
+secondary-outputs: $(SECONDARY_FLASH) $(SECONDARY_SIZE)
 
 .PHONY: all clean dependents explicit-dependencies warning-messages
 .SECONDARY:
