@@ -25,7 +25,7 @@
 #include "s32k_libuavcan.hpp"
 
 /* Choose for which board of the demo to target, NODE_A or NODE_B */
-#define NODE_B
+#define NODE_A
 
 /* Function that takes the payload and adds 1 */
 void payload_bounceADD(std::uint8_t* rx_payload)
@@ -57,10 +57,6 @@ void payload_bounceADD(std::uint8_t* rx_payload)
 
 void greenLED_init(void)
 {
-
-    PCC->PCCn[PCC_PORTE_INDEX] |= PCC_PCCn_CGC_MASK;   /* Enable clock for PORTE */
-    PORTE->PCR[4] |= PORT_PCR_MUX(5);                  /* Port E4: MUX = ALT5, CAN0_RX */
-    PORTE->PCR[5] |= PORT_PCR_MUX(5);                  /* Port E5: MUX = ALT5, CAN0_TX */
 
     PCC->PCCn[PCC_PORTD_INDEX] |= PCC_PCCn_CGC_MASK;   /* Enable clock for PORTD */
     PORTD->PCR[16] = PORT_PCR_MUX(1);                  /* Port D16: MUX = GPIO              */
