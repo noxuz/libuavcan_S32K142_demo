@@ -40,11 +40,17 @@
  * CAN1 TX: PTA13
  * CAN2 RX: PTB12
  * CAN2 TX: PTB13
+ * PTE10: CAN0 transceiver STB (UAVCAN node board only)
+ * PTE11: CAN1 transceiver STB (UAVCAN node board only)
  *
  * S32K146 and S32K148 although having multiple CANFD instances
  * their evb's have only one transceiver, the other instances's
  * digital signals are set out to pin headers.
  */
+
+/* Macro for additional configuration needed when using TJA1044 transceiver
+ * used in NXP's UAVCAN node board, set to 0 when using other boards  */
+#define UAVCAN_NODE_BOARD_USED 0
 
 /* Include desired target S32K14x registers and features header files,
  * defaults to S32K146 from NXP's UAVCAN node board */
@@ -83,6 +89,9 @@ constexpr static std::size_t S32K_Frame_Capacity = 40u;
 std::deque<CAN::Frame<CAN::TypeFD::MaxFrameSizeBytes>,
            platform::memory::PoolAllocator<S32K_Frame_Capacity, sizeof(CAN::Frame<CAN::TypeFD::MaxFrameSizeBytes>)>>
     g_frame_ISRbuffer[S32K_CANFD_Count];
+
+/* Counter for the number of discarded messages due to the RX buffer being full */
+std::uint32_t g_S32K_discarded_frames_count = 0;
 
 /* Number of filters supported by a single FlexCAN instance */
 constexpr static std::uint8_t S32K_Filter_Count = 5u;
@@ -611,9 +620,10 @@ public:
         SCG->SPLLCSR |= SCG_SPLLCSR_SPLLEN_MASK;  /* Enable PLL */
         SCG->SPLLCSR |= SCG_SPLLCSR_LK_MASK;      /* Lock register from accidental writes */
 
+        /* Poll for valid SPLL reference */
         while (!(SCG->SPLLCSR & SCG_SPLLCSR_SPLLVLD_MASK))
         {
-        }; /* Poll for valid SPLL reference */
+        };
 
         /* Normal RUN configuration for output clocks */
         SCG->RCCR = SCG_RCCR_SCS(6) |     /* Select SPLL as system clock source */
@@ -751,6 +761,7 @@ public:
             {
             };
 
+            /* Block for module ready flag */
             while (FlexCAN[i]->MCR & CAN_MCR_NOTRDY_MASK)
             {
             };
@@ -765,6 +776,19 @@ public:
         PCC->PCCn[PCC_PORTA_INDEX] |= PCC_PCCn_CGC_MASK; /* Clock gating to PORT A */
         PORTA->PCR[12] |= PORT_PCR_MUX(3);               /* CAN1_RX at PORT A pin 12 */
         PORTA->PCR[13] |= PORT_PCR_MUX(3);               /* CAN1_TX at PORT A pin 13 */
+
+        /* Set to LOW the standby (STB) pin in both transceivers of the UAVCAN node board */
+        if (UAVCAN_NODE_BOARD_USED)
+        {
+            PORTE->PCR[11] |= PORT_PCR_MUX(1); /* MUX to GPIO */
+            PTE->PDDR |= 1 << 11;              /* Set direction as output */
+            PTE->PCOR |= 1 << 11;              /* Set the pin LOW */
+
+            PORTE->PCR[10] |= PORT_PCR_MUX(1);
+            PTE->PDDR |= 1 << 10;
+            PTE->PCOR |= 1 << 10;
+        }
+
 #endif
 
 #if defined(MCU_S32K148)
@@ -905,6 +929,11 @@ public:
 
                 /* Insert the frame into the queue */
                 g_frame_ISRbuffer[instance].push_back(FrameISR);
+            }
+            else
+            {
+                /* Increment the number of discarded frames due to full RX dequeue */
+                g_S32K_discarded_frames_count++;
             }
 
             /* Unlock the MB by reading the timer register */
